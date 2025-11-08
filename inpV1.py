@@ -6,15 +6,13 @@ import time
 import collections
 
 
-SERIAL_PORT = 'COM3' 
+SERIAL_PORT = 'COM6' 
 BAUD_RATE = 115200
 
 # Signal Processing Constants
-FS = 100  # Sampling Rate in Hz (must match your ESP32's output rate)
-N_FFT = 256  # FFT Window Size (Must be a power of 2: 64, 128, 256, 512...)
+FS = 100  # Sampling Rate
+N_FFT = 256  # FFT Window Size
 
-# Data buffers (use collections.deque for efficient shifting)
-# We track 6 axes: ax, ay, az, gx, gy, gz
 data_buffer = {
     'ax': collections.deque(np.zeros(N_FFT), maxlen=N_FFT),
     'az': collections.deque(np.zeros(N_FFT), maxlen=N_FFT),
@@ -27,17 +25,19 @@ freq_labels = np.fft.fftfreq(N_FFT, d=1/FS)[:N_FFT // 2]
 # Attempt to initialize Serial
 try:
     ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=0.1)
-    print(f"Successfully connected to {SERIAL_PORT} at {BAUD_RATE} bps.")
+    print(f"Successfully connected to {SERIAL_PORT}")
     SERIAL_CONNECTED = True
+
 except serial.SerialException as e:
     print(f"ERROR: Could not open serial port {SERIAL_PORT}. Running in SIMULATION mode.")
     print("Please check connection and port name if you want real data.")
     print(f"Reason: {e}")
     SERIAL_CONNECTED = False
     
-    # Simulation timer for generating synthetic data
     sim_time = 0
     sim_start_time = time.time()
+
+
 # --- Data Reading and Processing Functions ---
 
 def read_serial_data():
@@ -60,10 +60,8 @@ def read_serial_data():
                         'gx': values[3], 'gy': values[4], 'gz': values[5]
                     }
         except ValueError:
-            # Handle incomplete or non-numeric lines
             return None
         except serial.SerialTimeoutException:
-            # Handle timeout
             return None
     
     # --- SIMULATION MODE (Fallback if serial is not connected) ---
